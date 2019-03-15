@@ -21,7 +21,7 @@ MODEL_TYPES=(
 ((TIME_BUDGET=3600*12))
 BATCH_SIZE_EXPONENT=4
 ((BATCH_SIZE=2**$BATCH_SIZE_EXPONENT))
-GPU_ID=0
+GPU_ID=3
 LOSS=${LOSSES[0]}
 LEARNING_RATE=0.003
 TRAIN_LIST_IDX=0
@@ -29,7 +29,7 @@ MODEL_TYPE=${MODEL_TYPES[4]}
 
 TRAIN_PATCH_LIST=/mnt/afs/chesapeake/for-le/Kolya_paper_patch_list/${TRAIN_LIST[${TRAIN_LIST_IDX}]}.txt
 
-EXP_NAME=ForKDD-landcover-batch_size-${BATCH_SIZE}-loss-${LOSS}-lr-${LEARNING_RATE}-train_patch-${TRAIN_LIST_IDX}-model-${MODEL_TYPE}-schedule-stepped-for_hyperopt
+EXP_NAME=ForKDD-landcover-batch_size-${BATCH_SIZE}-loss-${LOSS}-lr-${LEARNING_RATE}-train_patch-${TRAIN_LIST_IDX}-model-${MODEL_TYPE}-schedule-stepped
 OUTPUT=/mnt/blobfuse/train-output
 
 if [ -d "${OUTPUT}/${EXP_NAME}" ]; then

@@ -3,7 +3,6 @@ from keras.optimizers import SGD, Adam, RMSprop, Adadelta
 from keras.models import Input, Model
 from keras.layers import Conv2D, Concatenate, MaxPooling2D, Conv2DTranspose, Activation
 from keras.layers import UpSampling2D, Dropout, BatchNormalization
-from models import jaccard_loss
 
 '''
 U-Net: Convolutional Networks for Biomedical Image Segmentation
@@ -45,45 +44,3 @@ def level_block(m, dim, depth, inc, acti, do, bn, mp, up, res):
     else:
         m = conv_block(m, dim, acti, bn, res, do)
     return m
-
-def UNet(img_shape, out_ch=7, start_ch=64, depth=4, inc_rate=2., activation='relu', 
-    dropout=0.5, batchnorm=False, maxpool=True, upconv=True, residual=False, lr=0.003, loss="crossentropy"):
-    i = Input(shape=img_shape)
-    o = level_block(i, start_ch, depth, inc_rate, activation, dropout, batchnorm, maxpool, upconv, residual)
-    o = Conv2D(64, 3, activation="relu", padding="same")(o)
-    o = Conv2D(out_ch, 1, activation=None)(o)
-    o = Activation("softmax")(o)
-
-    model = Model(inputs=i, outputs=o)
-
-    optimizer = Adam(lr=lr)
-
-    if loss == "jaccard":
-        model.compile(loss=jaccard_loss, metrics=["categorical_crossentropy", "accuracy", jaccard_loss], optimizer=optimizer)
-    elif loss == "crossentropy":
-        model.compile(loss="categorical_crossentropy", metrics=["categorical_crossentropy", "accuracy", jaccard_loss], optimizer=optimizer)
-    else:
-        print("Loss function not specified, model not compiled")
-    return model
-
-
-
-def UNet_sgd(img_shape, out_ch=7, start_ch=64, depth=4, inc_rate=2., activation='relu', 
-    dropout=0.5, batchnorm=False, maxpool=True, upconv=True, residual=False, lr=0.003, loss="crossentropy"):
-    i = Input(shape=img_shape)
-    o = level_block(i, start_ch, depth, inc_rate, activation, dropout, batchnorm, maxpool, upconv, residual)
-    o = Conv2D(64, 3, activation="relu", padding="same")(o)
-    o = Conv2D(out_ch, 1, activation=None)(o)
-    o = Activation("softmax")(o)
-
-    model = Model(inputs=i, outputs=o)
-
-    optimizer = SGD(lr=lr, momentum=0.9, )
-
-    if loss == "jaccard":
-        model.compile(loss=jaccard_loss, metrics=["categorical_crossentropy", "accuracy", jaccard_loss], optimizer=optimizer)
-    elif loss == "crossentropy":
-        model.compile(loss="categorical_crossentropy", metrics=["categorical_crossentropy", "accuracy", jaccard_loss], optimizer=optimizer)
-    else:
-        print("Loss function not specified, model not compiled")
-    return model

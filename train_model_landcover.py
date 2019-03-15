@@ -165,7 +165,6 @@ def main():
     batch_size = args.batch_size
     learning_rate = args.learning_rate
     time_budget = args.time_budget
-    sampler = args.sampler
     loss = args.loss
     training_steps_per_epoch = len(highres_patches) // batch_size // 16
     validation_steps_per_epoch = 40
@@ -202,7 +201,7 @@ def main():
             lr = lr * 1/(1 + decay * epoch)
         return lr
     
-    def schedule_step(epoch, lr):
+    def schedule_stepped(epoch, lr):
         if epoch < 10:
             return 0.003
         elif epoch < 20:
@@ -213,7 +212,7 @@ def main():
             return 0.00003
 
     validation_callback = utils.LandcoverResults(log_dir=log_dir, time_budget=time_budget, verbose=False)
-    learning_rate_callback = LearningRateScheduler(schedule_step, verbose=1)
+    learning_rate_callback = LearningRateScheduler(schedule_stepped, verbose=1)
     model_checkpoint_callback = ModelCheckpoint(
         os.path.join(log_dir, "model_{epoch:02d}.h5"),
         verbose=0,
