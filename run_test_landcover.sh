@@ -1,12 +1,5 @@
 #!/bin/bash
 
-ARRAY=(
-    "uniform"
-    "importance_training"
-    "biased_importance_training"
-    "approximate_importance_training"
-    "rejection"
-)
 LOSSES=(
     "crossentropy"
     "jaccard"
@@ -37,19 +30,17 @@ MODEL_TYPES=(
     "unet1"
 )
 
-
-BATCH_SIZE_EXPONENT=4
 ((TIME_BUDGET=3600*5))
+BATCH_SIZE_EXPONENT=4
 ((BATCH_SIZE=2**$BATCH_SIZE_EXPONENT))
 GPU_ID=0
-SAMPLER=${ARRAY[4]}
 LOSS=${LOSSES[0]}
 LEARNING_RATE=0.003
 TRAIN_LIST_IDX=0
 MODEL_TYPE=${MODEL_TYPES[4]}
 
 
-EXP_NAME=ForKDD-landcover-sampler-${SAMPLER}-batch_size-${BATCH_SIZE}-loss-${LOSS}-lr-${LEARNING_RATE}-train_patch-${TRAIN_LIST_IDX}-model-${MODEL_TYPE}-schedule-stepped
+EXP_NAME=ForKDD-landcover-batch_size-${BATCH_SIZE}-loss-${LOSS}-lr-${LEARNING_RATE}-train_patch-${TRAIN_LIST_IDX}-model-${MODEL_TYPE}-schedule-stepped
 OUTPUT=/mnt/blobfuse/train-output
 PRED_OUTPUT=/mnt/blobfuse/pred-output/ForKDD_KDD_test_format
 

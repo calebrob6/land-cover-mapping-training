@@ -1,12 +1,5 @@
 #!/bin/bash
 
-ARRAY=(
-    "uniform"
-    "importance_training"
-    "biased_importance_training"
-    "approximate_importance_training"
-    "rejection"
-)
 LOSSES=(
     "crossentropy"
     "jaccard"
@@ -23,20 +16,12 @@ MODEL_TYPES=(
     "extended_bn"
     "extended2_bn"
     "unet1"
-    "unet2"
-    "unet3"
 )
 
-#for i in {4..6}
-#do
-
-i=4
-echo "Running for $i"
 ((TIME_BUDGET=3600*12))
-#((TIME_BUDGET=360))
-((BATCH_SIZE=2**$i))
+BATCH_SIZE_EXPONENT=4
+((BATCH_SIZE=2**$BATCH_SIZE_EXPONENT))
 GPU_ID=0
-SAMPLER=${ARRAY[0]}
 LOSS=${LOSSES[0]}
 LEARNING_RATE=0.003
 TRAIN_LIST_IDX=0
@@ -44,7 +29,7 @@ MODEL_TYPE=${MODEL_TYPES[4]}
 
 TRAIN_PATCH_LIST=/mnt/afs/chesapeake/for-le/Kolya_paper_patch_list/${TRAIN_LIST[${TRAIN_LIST_IDX}]}.txt
 
-EXP_NAME=ForKDD-landcover-sampler-${SAMPLER}-batch_size-${BATCH_SIZE}-loss-${LOSS}-lr-${LEARNING_RATE}-train_patch-${TRAIN_LIST_IDX}-model-${MODEL_TYPE}-schedule-stepped-for_hyperopt
+EXP_NAME=ForKDD-landcover-batch_size-${BATCH_SIZE}-loss-${LOSS}-lr-${LEARNING_RATE}-train_patch-${TRAIN_LIST_IDX}-model-${MODEL_TYPE}-schedule-stepped-for_hyperopt
 OUTPUT=/mnt/blobfuse/train-output
 
 if [ -d "${OUTPUT}/${EXP_NAME}" ]; then
@@ -70,7 +55,6 @@ unbuffer python -u train_model_landcover.py \
     --gpu ${GPU_ID} \
     --model_type ${MODEL_TYPE} \
     --learning_rate ${LEARNING_RATE} \
-    --sampler ${SAMPLER} \
     --batch_size ${BATCH_SIZE} \
     --loss ${LOSS} \
     --time_budget ${TIME_BUDGET} \
@@ -83,7 +67,6 @@ unbuffer python -u train_model_landcover.py \
 #     --output ${OUTPUT} \
 #     --gpu ${GPU_ID} \
 #     --learning_rate ${LEARNING_RATE} \
-#     --sampler ${SAMPLER} \
 #     --batch_size ${BATCH_SIZE} \
 #     --loss ${LOSS} \
 #     --time_budget ${TIME_BUDGET} \
