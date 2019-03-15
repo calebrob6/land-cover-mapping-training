@@ -1,0 +1,5 @@
+*.pyc
+*.ipynb
+
+sync_up.sh
+files_to_sync.txt
