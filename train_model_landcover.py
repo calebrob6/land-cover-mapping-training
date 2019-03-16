@@ -106,6 +106,8 @@ def do_args(arg_list, name):
     parser.add_argument("--gpu", action="store", dest="gpu", type=int, help="GPU id to use", required=False)
 
     parser.add_argument("--training_patches", action="store", dest="training_patches_fn", type=str, help="Path to file containing training patches", required=True)
+    parser.add_argument("--validation_patches", action="store", dest="validation_patches_fn", type=str, help="Path to file containing validation patches", required=True)
+
     parser.add_argument("--model_type", action="store", dest="model_type", type=str, \
         choices=["baseline", "extended", "extended_bn", "extended2_bn", "unet1", "unet2", "unet3"], \
         help="Model architecture to use", required=True
