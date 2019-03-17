@@ -131,6 +131,7 @@ def main():
     name = args.name
 
     training_patches_fn = args.training_patches_fn
+    validation_patches_fn = args.validation_patches_fn
 
     log_dir = os.path.join(output, name)
 
@@ -151,13 +152,18 @@ def main():
     training_patches = f.read().strip().split("\n")
     f.close()
 
+    f = open(validation_patches_fn, "r")
+    validation_patches = f.read().strip().split("\n")
+    f.close()
+
+    '''
     highres_patches = []
     for fn in training_patches:
         parts = fn.split("-")
         parts = np.array(list(map(int, parts[2].split("_"))))
         if parts[0] == 0:
             highres_patches.append(fn)
-
+    '''
 
     #------------------------------
     # Step 2, run experiment
@@ -168,12 +174,12 @@ def main():
     learning_rate = args.learning_rate
     time_budget = args.time_budget
     loss = args.loss
-    training_steps_per_epoch = len(highres_patches) // batch_size // 16
-    validation_steps_per_epoch = 40
+    training_steps_per_epoch = len(training_patches) // batch_size // 16
+    validation_steps_per_epoch = len(validation_patches) // batch_size // 16
 
     #training_steps_per_epoch = 10
     #validation_steps_per_epoch = 2
-    print("Number of training steps per epoch: %d" % (training_steps_per_epoch))
+    print("Number of training/validation steps per epoch: %d/%d" % (training_steps_per_epoch, validation_steps_per_epoch))
 
 
     # Build the model
@@ -224,11 +230,11 @@ def main():
     )
 
     model.fit_generator(
-        data_generator(highres_patches, batch_size, 240, 240, 4, 7),
+        data_generator(training_patches, batch_size, 240, 240, 4, 7),
         steps_per_epoch=training_steps_per_epoch,
         epochs=10**6,
         verbose=1,
-        validation_data=data_generator(highres_patches, batch_size, 240, 240, 4, 7),
+        validation_data=data_generator(validation_patches, batch_size, 240, 240, 4, 7),
         validation_steps=validation_steps_per_epoch,
         max_queue_size=64,
         workers=1,

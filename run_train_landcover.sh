@@ -3,6 +3,7 @@
 LOSSES=(
     "crossentropy"
     "jaccard"
+    "superres"
 )
 TRAIN_LIST=(
     "train_MD_region_patch_LC1_all_NLCD"
@@ -16,6 +17,7 @@ MODEL_TYPES=(
     "extended_bn"
     "extended2_bn"
     "unet1"
+    "unet2"
 )
 
 ((TIME_BUDGET=3600*12))
@@ -24,13 +26,14 @@ BATCH_SIZE_EXPONENT=4
 GPU_ID=3
 LOSS=${LOSSES[0]}
 LEARNING_RATE=0.003
-TRAIN_LIST_IDX=0
-MODEL_TYPE=${MODEL_TYPES[4]}
+MODEL_TYPE=${MODEL_TYPES[5]}
+NOTE="replication_1"
 
-TRAIN_PATCH_LIST=/mnt/afs/chesapeake/for-le/Kolya_paper_patch_list/${TRAIN_LIST[${TRAIN_LIST_IDX}]}.txt
+TRAIN_PATCH_LIST=data/md_1m_2013_train_patches.txt
+VAL_PATCH_LIST=data/md_1m_2013_val_patches.txt
 
-EXP_NAME=ForKDD-landcover-batch_size-${BATCH_SIZE}-loss-${LOSS}-lr-${LEARNING_RATE}-train_patch-${TRAIN_LIST_IDX}-model-${MODEL_TYPE}-schedule-stepped
-OUTPUT=/mnt/blobfuse/train-output
+EXP_NAME=ForICCV-landcover-batch_size-${BATCH_SIZE}-loss-${LOSS}-lr-${LEARNING_RATE}-model-${MODEL_TYPE}-schedule-stepped-note-${NOTE}
+OUTPUT=/mnt/blobfuse/train-output/ForICCV/
 
 if [ -d "${OUTPUT}/${EXP_NAME}" ]; then
     echo "Experiment ${OUTPUT}/${EXP_NAME} exists"
@@ -60,6 +63,7 @@ unbuffer python -u train_model_landcover.py \
     --time_budget ${TIME_BUDGET} \
     --verbose 1 \
     --training_patches ${TRAIN_PATCH_LIST} \
+    --validation_patches ${VAL_PATCH_LIST} \
     &> ${OUTPUT}/${EXP_NAME}/log.txt &
 
 # python -u train_model_landcover.py \
