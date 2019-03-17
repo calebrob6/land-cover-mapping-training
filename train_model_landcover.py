@@ -42,60 +42,9 @@ import numpy as np
 
 import utils
 import models
+import datagen
+
 from keras.callbacks import LearningRateScheduler, ModelCheckpoint
-
-def to_categorical(y, num_classes=None):
-    """Converts a class vector (integers) to binary class matrix.
-    E.g. for use with categorical_crossentropy.
-    # Arguments
-        y: class vector to be converted into a matrix
-            (integers from 0 to num_classes).
-        num_classes: total number of classes.
-    # Returns
-        A binary matrix representation of the input.
-    """
-    y = np.array(y, dtype='int')
-    input_shape = y.shape
-    if input_shape and input_shape[-1] == 1 and len(input_shape) > 1:
-        input_shape = tuple(input_shape[:-1])
-    y = y.ravel()
-    if not num_classes:
-        num_classes = np.max(y) + 1
-    n = y.shape[0]
-    categorical = np.zeros((n, num_classes), dtype=np.float32)
-    categorical[np.arange(n), y] = 1
-    output_shape = input_shape + (num_classes,)
-    categorical = np.reshape(categorical, output_shape)
-    return categorical
-
-def data_generator(fns, batch_size, input_size, output_size, num_channels, num_classes, verbose=None):
-    file_indices = list(range(len(fns)))
-    
-    x_batch = np.zeros((batch_size, input_size, input_size, num_channels), dtype=np.float32)
-    y_batch = np.zeros((batch_size, output_size, output_size, num_classes), dtype=np.float32)
-    
-    counter = 0
-    while 1:
-        np.random.shuffle(file_indices)
-        
-        for i in range(0, len(file_indices), batch_size):
-
-            if i + batch_size >= len(file_indices): # if we don't have enough samples left, just quit and reshuffle
-                break
-
-            batch_idx = 0
-            for j in range(i, i+batch_size):
-                data = np.load(fns[file_indices[j]]).squeeze()
-                data = np.rollaxis(data, 0, 3)
-
-                x_batch[batch_idx] = data[:,:,:4]
-                y_batch[batch_idx] = to_categorical(data[:,:,4], num_classes=num_classes)
-                batch_idx += 1
-
-            yield (x_batch.copy(), y_batch.copy())
-            if verbose is not None:
-                print("%s yielded %d" % (verbose, counter))
-            counter += 1
 
 def do_args(arg_list, name):
     parser = argparse.ArgumentParser(description=name)
@@ -108,6 +57,9 @@ def do_args(arg_list, name):
     parser.add_argument("--training_patches", action="store", dest="training_patches_fn", type=str, help="Path to file containing training patches", required=True)
     parser.add_argument("--validation_patches", action="store", dest="validation_patches_fn", type=str, help="Path to file containing validation patches", required=True)
 
+    parser.add_argument("--superres_states", action="store", dest="superres_states", type=str, nargs='+', help="States to use only superres loss with", required=False)
+
+
     parser.add_argument("--model_type", action="store", dest="model_type", type=str, \
         choices=["baseline", "extended", "extended_bn", "extended2_bn", "unet1", "unet2", "unet3"], \
         help="Model architecture to use", required=True
@@ -117,7 +69,8 @@ def do_args(arg_list, name):
     parser.add_argument("--batch_size", action="store", type=eval, help="Batch size", default="128")
     parser.add_argument("--time_budget", action="store", type=int, help="Time limit", default=3600*3)
     parser.add_argument("--learning_rate", action="store", type=float, help="Learning rate", default=0.003)
-    parser.add_argument("--loss", action="store", type=str, help="Loss function", choices=["crossentropy", "jaccard"], default=None)
+    parser.add_argument("--loss", action="store", type=str, help="Loss function", \
+        choices=["crossentropy", "jaccard", "superres"], required=True)
 
     return parser.parse_args(arg_list)
 
@@ -132,6 +85,14 @@ def main():
 
     training_patches_fn = args.training_patches_fn
     validation_patches_fn = args.validation_patches_fn
+    superres_states = args.superres_states
+
+    model_type = args.model_type
+    batch_size = args.batch_size
+    learning_rate = args.learning_rate
+    time_budget = args.time_budget
+    loss = args.loss
+
 
     log_dir = os.path.join(output, name)
 
@@ -156,6 +117,12 @@ def main():
     validation_patches = f.read().strip().split("\n")
     f.close()
 
+    print("Loaded %d training patches and %d validation patches" % (len(training_patches), len(validation_patches)))
+
+    if loss == "superres":
+        print("Using %d states in superres loss:" % (len(superres_states)))
+        print(superres_states)
+
     '''
     highres_patches = []
     for fn in training_patches:
@@ -169,36 +136,33 @@ def main():
     # Step 2, run experiment
     #------------------------------
 
-    model_type = args.model_type
-    batch_size = args.batch_size
-    learning_rate = args.learning_rate
-    time_budget = args.time_budget
-    loss = args.loss
-    training_steps_per_epoch = len(training_patches) // batch_size // 16
-    validation_steps_per_epoch = len(validation_patches) // batch_size // 16
+    
+    #training_steps_per_epoch = len(training_patches) // batch_size // 16
+    #validation_steps_per_epoch = len(validation_patches) // batch_size // 16
 
-    #training_steps_per_epoch = 10
-    #validation_steps_per_epoch = 2
+    training_steps_per_epoch = 300
+    validation_steps_per_epoch = 39
+
     print("Number of training/validation steps per epoch: %d/%d" % (training_steps_per_epoch, validation_steps_per_epoch))
 
 
     # Build the model
     if model_type == "baseline":
-        model = models.baseline_model_landcover((240,240,4), 7, lr=learning_rate, loss=loss)
+        model = models.baseline_model_landcover((240,240,4), 5, lr=learning_rate, loss=loss)
     elif model_type == "extended":
-        model = models.extended_model_landcover((240,240,4), 7, lr=learning_rate, loss=loss)
+        model = models.extended_model_landcover((240,240,4), 5, lr=learning_rate, loss=loss)
     elif model_type == "extended_bn":
-        model = models.extended_model_bn_landcover((240,240,4), 7, lr=learning_rate, loss=loss)
+        model = models.extended_model_bn_landcover((240,240,4), 5, lr=learning_rate, loss=loss)
     elif model_type == "extended2_bn":
-        model = models.extended2_model_bn_landcover((240,240,4), 7, lr=learning_rate, loss=loss)
+        model = models.extended2_model_bn_landcover((240,240,4), 5, lr=learning_rate, loss=loss)
     elif model_type == "unet1":
         model = models.unet_landcover(
-            (240,240,4), out_ch=7, start_ch=64, depth=3, inc_rate=2., activation='relu', 
+            (240,240,4), out_ch=5, start_ch=64, depth=3, inc_rate=2., activation='relu', 
             dropout=0.5, batchnorm=True, maxpool=True, upconv=True, residual=False, lr=learning_rate, loss=loss
         )
     elif model_type == "unet2":
         model = models.unet_landcover(
-            (240,240,4), out_ch=7, start_ch=32, depth=4, inc_rate=2., activation='relu', 
+            (240,240,4), out_ch=5, start_ch=32, depth=4, inc_rate=2., activation='relu', 
             dropout=False, batchnorm=True, maxpool=True, upconv=True, residual=False, lr=learning_rate, loss=loss
         )
     model.summary()
@@ -229,15 +193,24 @@ def main():
         period=1
     )
 
+    training_generator = None
+    validation_generator = None
+    if loss == "superres":
+        training_generator = datagen.DataGenerator(training_patches, batch_size, training_steps_per_epoch, 240, 240, 4, superres=True, superres_states=superres_states)
+        validation_generator = datagen.DataGenerator(validation_patches, batch_size, validation_steps_per_epoch, 240, 240, 4, superres=True, superres_states=[])
+    else:
+        training_generator = datagen.DataGenerator(training_patches, batch_size, training_steps_per_epoch, 240, 240, 4)
+        validation_generator = datagen.DataGenerator(validation_patches, batch_size, validation_steps_per_epoch, 240, 240, 4)
+
     model.fit_generator(
-        data_generator(training_patches, batch_size, 240, 240, 4, 7),
+        training_generator,
         steps_per_epoch=training_steps_per_epoch,
         epochs=10**6,
         verbose=1,
-        validation_data=data_generator(validation_patches, batch_size, 240, 240, 4, 7),
+        validation_data=validation_generator,
         validation_steps=validation_steps_per_epoch,
         max_queue_size=64,
-        workers=1,
+        workers=4,
         use_multiprocessing=True,
         callbacks=[validation_callback, learning_rate_callback, model_checkpoint_callback],
         initial_epoch=0 

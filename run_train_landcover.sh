@@ -30,6 +30,8 @@ MODEL_TYPE=${MODEL_TYPES[5]}
 NOTE="replication_1"
 
 TRAIN_PATCH_LIST=data/md_1m_2013_train_patches.txt
+#TRAIN_PATCH_LIST=data/md+ny_1m_2013_train_patches.txt
+SUPERRES_STATE_LIST="ny_1m_2013"
 VAL_PATCH_LIST=data/md_1m_2013_val_patches.txt
 
 EXP_NAME=ForICCV-landcover-batch_size-${BATCH_SIZE}-loss-${LOSS}-lr-${LEARNING_RATE}-model-${MODEL_TYPE}-schedule-stepped-note-${NOTE}
@@ -64,18 +66,22 @@ unbuffer python -u train_model_landcover.py \
     --verbose 1 \
     --training_patches ${TRAIN_PATCH_LIST} \
     --validation_patches ${VAL_PATCH_LIST} \
-    &> ${OUTPUT}/${EXP_NAME}/log.txt &
+    --superres_states ${SUPERRES_STATE_LIST} \
+   &> ${OUTPUT}/${EXP_NAME}/log.txt &
 
 # python -u train_model_landcover.py \
 #     --name ${EXP_NAME} \
 #     --output ${OUTPUT} \
 #     --gpu ${GPU_ID} \
+#     --model_type ${MODEL_TYPE} \
 #     --learning_rate ${LEARNING_RATE} \
 #     --batch_size ${BATCH_SIZE} \
 #     --loss ${LOSS} \
 #     --time_budget ${TIME_BUDGET} \
 #     --verbose 1 \
-#     --training_patches ${TRAIN_PATCH_LIST}
+#     --training_patches ${TRAIN_PATCH_LIST} \
+#     --validation_patches ${VAL_PATCH_LIST} \
+#     --superres_states ${SUPERRES_STATE_LIST}
 
 #wait;
 exit

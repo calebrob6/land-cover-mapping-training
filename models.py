@@ -16,6 +16,10 @@ def jaccard_loss(y_true, y_pred, smooth=0.001, num_classes=7):
     jac = K.sum(intersection + smooth, axis=(0,1,2)) / K.sum(sum_ - intersection + smooth, axis=(0,1,2))                                    
     return (1.0 - K.sum(jac) / num_classes)
 
+def accuracy(y_true, y_pred):
+    num = K.sum(K.cast(K.equal(K.argmax(y_true[:,:,:,1:], axis=-1), K.argmax(y_pred[:,:,:,1:], axis=-1)), dtype="float32") * y_true[:,:,:,0])
+    denom = K.sum(y_true[:,:,:,0])
+    return num / (denom + 1) # make sure we don't get divide by zero
 
 def hr_loss(boundary=0):
     '''The first channel of y_true should be all 1's if we want to use hr_loss, or all 0's if we don't want to use hr_loss
@@ -216,6 +220,9 @@ def unet_landcover(img_shape, out_ch=7, start_ch=64, depth=4, inc_rate=2., activ
                 "outputs_hr": 0.97560975609,
                 "outputs_sr": 0.025
             },
+            metrics={
+                "outputs_hr": accuracy
+            }
         )
     else:
         print("Loss function not specified, model not compiled")
