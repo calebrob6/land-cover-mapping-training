@@ -5,6 +5,36 @@ import numpy as np
 
 import keras
 
+def load_nlcd_stats():
+    # Reproduced from old DataHandle.py
+    nlcd_means = np.concatenate([np.zeros((22,1)),np.loadtxt("data/nlcd_mu.txt")], axis=1)
+    nlcd_means[nlcd_means == 0] = 0.000001
+    nlcd_means[:, 0] = 0
+    nlcd_means[2:,1] -= 0
+    nlcd_means[3:7, 4] += 0.25
+    nlcd_means = nlcd_means / np.maximum(0, nlcd_means).sum(axis=1, keepdims=True)
+    nlcd_means[0,:] = 0
+    nlcd_means[-1,:] = 0
+
+    nlcd_vars = np.concatenate([np.zeros((22,1)),np.loadtxt("data/nlcd_sigma.txt")], axis=1)
+    nlcd_vars[nlcd_vars < 0.0001] = 0.0001
+    nlcd_class_weights = np.ones((22,))
+
+    # Taken from the training script
+    nlcd_class_weights = np.array([
+        0.0, 1.0, 0.5,
+        1.0, 1.0, 1.0, 1.0, 1.0,
+        0.5, 1.0, 1.0,
+        0.0,
+        1.0, 1.0,
+        0.0, 0.0, 0.0,
+        0.5, 0.5, 1.0, 1.0,
+        0.0
+    ])
+
+    return nlcd_class_weights, nlcd_means, nlcd_vars
+
+
 def find_key_by_str(keys, needle):
     for key in keys:
         if needle in key:
