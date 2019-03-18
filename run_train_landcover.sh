@@ -5,11 +5,6 @@ LOSSES=(
     "jaccard"
     "superres"
 )
-TRAIN_LIST=(
-    "train_MD_region_patch_LC1_all_NLCD"
-    "train_Chesapeake2013_region_patch_LC1_all_NLCD"
-    "train_Chesapeake2014_region_patch_LC1_all_NLCD"
-)
 
 MODEL_TYPES=(
     "baseline"
@@ -35,7 +30,7 @@ SUPERRES_STATE_LIST="ny_1m_2013"
 VAL_PATCH_LIST=data/md_1m_2013_val_patches.txt
 
 EXP_NAME=ForICCV-landcover-batch_size-${BATCH_SIZE}-loss-${LOSS}-lr-${LEARNING_RATE}-model-${MODEL_TYPE}-schedule-stepped-note-${NOTE}
-OUTPUT=/mnt/blobfuse/train-output/ForICCV/
+OUTPUT=/mnt/blobfuse/train-output/ForICCV
 
 if [ -d "${OUTPUT}/${EXP_NAME}" ]; then
     echo "Experiment ${OUTPUT}/${EXP_NAME} exists"
