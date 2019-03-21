@@ -17,7 +17,7 @@ for TEST_SPLIT in "${TEST_SPLITS[@]}"
 do
 
     echo "${TEST_SPLIT}"
-    ./eval_landcover_results.sh /mnt/blobfuse/pred-output/ForICCV/${EXP_BASE}/log_acc_${TEST_SPLIT}.txt
+    ./eval_landcover_results.sh ${EXP_BASE}/log_acc_${TEST_SPLIT}.txt
 done
 
 #echo "log_acc_MD_2013"

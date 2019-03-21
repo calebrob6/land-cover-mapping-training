@@ -108,6 +108,9 @@ def do_args(arg_list, name):
     parser.add_argument("--gpu", action="store", dest="gpu", type=int, required=False, \
         help="GPU id to use",
     )
+    parser.add_argument("--superres", action="store_true", dest="superres", default=False, \
+        help="Is this a superres model",
+    )
 
     return parser.parse_args(arg_list)
 
@@ -120,6 +123,7 @@ def main():
     model_fn = args.model_fn
     compress = args.compress
     grayscale_output = args.grayscale_output
+    superres = args.superres
 
     print("Starting %s at %s" % (program_name, str(datetime.datetime.now())))
     start_time = float(time.time())
@@ -132,11 +136,21 @@ def main():
         print(e)
         return
 
-    model = keras.models.load_model(model_fn, custom_objects={"jaccard_loss":keras.metrics.mean_squared_error})
+    model = keras.models.load_model(model_fn, custom_objects={
+        "jaccard_loss":keras.metrics.mean_squared_error,
+        "loss":keras.metrics.mean_squared_error
+    })
 
+    if superres:
+        model = keras.models.Model(input=model.inputs, outputs=[model.outputs[0]])
+        model.compile("sgd","mse")
+    
     output_shape = model.output_shape[1:]
     input_shape = model.input_shape[1:]
     model_input_size = input_shape[0]
+
+    print(input_shape, output_shape)
+    print(model.outputs)
 
     for i in range(len(pair_list)):
         tic = float(time.time())
@@ -153,8 +167,8 @@ def main():
         naip_fid.close()
 
         output = run_model_on_tile(model, naip_tile, model_input_size, output_shape[2], 32)
-        output[:,:,4] += output[:,:,5]
-        output[:,:,4] += output[:,:,6]
+        #output[:,:,4] += output[:,:,5]
+        #output[:,:,4] += output[:,:,6]
         output = output[:,:,:5]
         #----------------------------------------------------------------
         # Write out each softmax prediction to a separate file

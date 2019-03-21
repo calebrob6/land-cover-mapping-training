@@ -127,7 +127,7 @@ def main():
         pred = np.squeeze(pred)
 
         roi = (lc>0) * (pred>0)
-        roi_dev = (lc>0) * (pred>0) * (nlcd>=3) * (nlcd<=6)
+        roi_dev = (lc>0) * (pred>0) * (nlcd>=4) * (nlcd<=6)
 
         if np.sum(roi) > 0:
             if np.sum(roi_dev) > 0:
