@@ -1,0 +1,44 @@
+{
+  "data_dir": "/data",
+  "train_image_dir": "/data/train_img_tensors/",
+  "experiment_name": "duke_gn",
+  "checkpoint_file": "none",
+  "patch_size": 240,
+  "batch_size": 8,
+  "train_opts": {
+    "n_epochs": 100,
+    "verbose": false,
+    "data_augmentation": false,
+    "early_stopping": false,
+    "early_stopping_patience": 10,
+    "optimizer": "adam",
+    "optimizer_lr": 5e-4,
+    "scheduler_step_size": 20,
+    "scheduler_gamma": 0.1,
+    "loss": "bce",
+    "alpha_cunet_loss": 0.75
+  },
+  "model_opts": {
+    "model": "unet",
+    "unet_opts": {
+      "normalization_type": "GN",
+      "n_input_channels": 4,
+      "n_classes": 4
+    },
+    "conditioning_nlcd_opts":{
+        "normalization_type":"GN",
+        "n_input_channels": 4,
+        "n_classes": 12
+    },
+    "conditional_superres_net_opts": {
+        "end_to_end": true,
+        "normalization_type":"GN",
+        "conditioning_type":"CGN",
+        "conditioning_net_ckpt_path": "/dir2/conditioning_ckpt_path",
+        "n_input_channels": 4,
+        "n_hidden_cbn": 2048,
+        "n_features_cbn": 992,
+        "n_classes": 4
+      }
+  }
+}
