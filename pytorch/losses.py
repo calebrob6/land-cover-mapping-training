@@ -131,7 +131,7 @@ class multiclass_tversky_loss(nn.module):
     def __index__(self):
         super(multiclass_tversky_loss, self).__init__()
 
-    def tversky_loss(self, y_true, logits, alpha, beta, eps=1e-7):
+    def tversky_loss(self, y_true, logits, alpha=0.5, beta=0.5, eps=1e-7):
         """Computes the Tversky loss [1].
         Args:
             y_true: a tensor of shape [B, H, W] or [B, 1, H, W].

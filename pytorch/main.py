@@ -1,9 +1,10 @@
 import argparse
-import json, shutil, os
-import torch
-from pytorch.utils.experiment_utils import (
-    CheckpointSaver, improve_reproducibility, set_all_rngs, NamespaceFromDict
-)
+import json, os
+from pytorch.models.unet import Unet
+from pytorch.models.conditional_superres_net import Conditional_superres_net
+from pytorch.losses import (multiclass_ce, multiclass_dice_loss, multiclass_jaccard_loss, multiclass_tversky_loss)
+from pytorch.train import train, Framework
+from pytorch.data_loader import DataGenerator
 
 
 """
@@ -15,22 +16,14 @@ def parse_int_list(s):
     if s == '': return ()
     return tuple(int(n) for n in s.split(','))
 
+
+
 parser = argparse.ArgumentParser()
 
 ### JSON FILE IF NEW EXPERIMENT
 parser.add_argument('--config-file', type=str,
                     help="json file containing the configuration")
-# CHECKPOINT FILE IF RESUMING
-parser.add_argument('--checkpoint-file', type=str,
-                    help="file to resume training from")
 
-### FILE I/O SETTINGS
-parser.add_argument('--data-root', type=str, required=True,
-                    help="root dir of the data set")
-parser.add_argument('--train-dir', type=str, required=True,
-                    help="path where checkpoints are saved")
-parser.add_argument('--backup-dir', type=str, required=True,
-                    help='backup dir for long-term storage of parameters')
 
 ### GENERAL EXPERIMENT SETTINGS
 parser.add_argument('--debug', action='store_true', help=(
@@ -39,39 +32,82 @@ parser.add_argument('--debug', action='store_true', help=(
 
 args = parser.parse_args()
 
-assert (args.checkpoint_file is None) ^ (args.config_file is None), (
-    "either specify a config-file for a new experiment or a checkpoint-file "
-    "for resuming an existing experiment")
+assert args.config_file is not None
+params = json.load(open(args.cofig_file))
 
-if args.config_file is not None:
-    resume_run = False
+training_patches_fn = params["training_patches_fn"]
+validation_patches_fn = params["validation_patches_fn"]
+f = open(training_patches_fn, "r")
+training_patches = f.read().strip().split("\n")
+f.close()
 
-    # load config file
-    config_dict = json.load(open(args.config_file))
-    config = NamespaceFromDict(config_dict)
+f = open(validation_patches_fn, "r")
+validation_patches = f.read().strip().split("\n")
+f.close()
 
-    args_dict = vars(args)
-    # save command-line arguments to train and backup dir
-    json.dump(args_dict, open(os.path.join(args.train_dir, 'args.json'), 'w'),
-            indent=4, sort_keys=True)
-    json.dump(args_dict, open(os.path.join(args.backup_dir, 'args.json'), 'w'),
-            indent=4, sort_keys=True)
-    shutil.copy(args.config_file, os.path.join(args.train_dir, 'config.json'))
-    shutil.copy(args.config_file, os.path.join(args.backup_dir, 'config.json'))
+batch_size = params["loader_opts"]["batch_size"]
+steps_per_epoch = params["loader_opts"]["steps_per_epoch"]
+patch_size = params["patch_size"]
+num_channels = params["num_channels"]
 
-else:
-    resume_run = True
+def patch_gen_train():
+    return DataGenerator(
+        training_patches, batch_size, steps_per_epoch, patch_size, num_channels, superres=False
+    )
 
-    # load checkpoint and corresponding args.json overwriting command-line args
-    checkpoint_file = args.checkpoint_file  # backup checkpoint file path
-    args_dict = json.load(open(os.path.join(args.train_dir, 'args.json')))
-    config_dict = json.load(open(os.path.join(args.train_dir, 'config.json')))
-    args = NamespaceFromDict(args_dict)
-    config = NamespaceFromDict(config_dict)
+def patch_gen_val():
+    return DataGenerator(
+        validation_patches, batch_size, steps_per_epoch, patch_size, num_channels, superres=False
+    )
+def main():
+    train_opts = params["train_opts"]
+    model_opts = params["model_opts"]
+
+    # Default model is Duke_Unet
+
+    if model_opts["model"] == "unet":
+        model = Unet
+    elif model_opts["model"] == "conditional_superres_net":
+        model = Conditional_superres_net
+    else:
+        print(
+            "Option {} not supported. Available options: unet, conditional_superres_net".format(
+                model_opts["model"]))
+        raise NotImplementedError
+
+    if train_opts["loss"] == "dice":
+        loss = multiclass_dice_loss
+    elif train_opts["loss"] == "ce":
+        loss = multiclass_ce
+    elif train_opts["loss"] == "jaccard":
+        loss = multiclass_jaccard_loss
+    elif train_opts["loss"] == "tversky":
+        loss = multiclass_tversky_loss
+    else:
+        print("Option {} not supported. Available options: dice, ce, jaccard, tversky".format(train_opts["loss"]))
+        raise NotImplementedError
+
+    frame = Framework(
+        model(model_opts),
+        loss(),
+        train_opts["optimizer_lr"]
+    )
+    if not os.path.exists(params["save_dir"]):
+        os.makedirs(params["save_dir"])
+
+    dataloaders = {'train': patch_gen_train, 'val': patch_gen_val}
+
+    #FIXME: Not sure if shuffling is working
+
+    if model_opts["model"] == "conditional_superres_net":
+        print("Option {} not supported. It will be available shortly Available options: unet".format(train_opts["loss"]))
+        raise NotImplementedError
+    else:
+        _, train_history, val_history = train(frame, dataloaders, train_opts["n_epochs"],
+                                              params)
 
 
-print(f'using training directory {args.train_dir}')
 
-# improve reproducibility
-improve_reproducibility(seed=config.rand_seed)
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+if __name__ == "__main__":
+    main()
+

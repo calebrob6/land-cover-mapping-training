@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import random, os, shutil
+import matplotlib.pyplot as plt
 
 """
 @uthor: Anthony Ortiz
@@ -45,6 +46,22 @@ def seed_all_rngs(seed=0):
     np.random.seed(seed)
     random.seed(seed)
     torch.manual_seed(seed)
+
+def saveLoss(train_loss, val_loss, save_dir, name = 'loss_plots'):
+    """
+
+    :param train_loss: train losses in different epochs
+    :param val_loss: validation losses in different epochs
+    :return:
+    """
+    plt.yscale('log')
+    plt.plot(train_loss)
+    plt.plot(val_loss)
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'Validation'], loc='upper right')
+    plt.savefig(save_dir + name + '.png')
 
 class CheckpointSaver(object):
     def __init__(self, save_dir, backup_dir):

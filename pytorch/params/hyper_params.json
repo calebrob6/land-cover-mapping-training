@@ -1,10 +1,19 @@
 {
   "data_dir": "/data",
-  "train_image_dir": "/data/train_img_tensors/",
   "experiment_name": "duke_gn",
   "checkpoint_file": "none",
+  "save_dir": "/home/results/models/",
+  "backup_dir": "/home/anthony/Desktop/research_projects/conditional_unet/results/backup_duke_gn/",
+  "validation_patches_fn":"",
+  "training_patches_fn":"",
   "patch_size": 240,
-  "batch_size": 8,
+  "loader_opts": {
+      "batch_size": 16,
+      "shuffle": true,
+      "num_workers": 6,
+      "steps_per_epoch": 300,
+      "num_channels": 4
+  },
   "train_opts": {
     "n_epochs": 100,
     "verbose": false,
