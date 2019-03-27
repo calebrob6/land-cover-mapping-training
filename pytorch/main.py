@@ -1,6 +1,7 @@
 import argparse
 import json, os
 from pytorch.models.unet import Unet
+from pytorch.models.fusionnet import Fusionnet
 from pytorch.models.conditional_superres_net import Conditional_superres_net
 from pytorch.losses import (multiclass_ce, multiclass_dice_loss, multiclass_jaccard_loss, multiclass_tversky_loss)
 from pytorch.train import train, Framework
@@ -76,6 +77,8 @@ def main():
         model = Unet
     elif model_opts["model"] == "conditional_superres_net":
         model = Conditional_superres_net
+    elif model_opts["model"] == "fusionnet":
+        model = Fusionnet
     else:
         print(
             "Option {} not supported. Available options: unet, conditional_superres_net".format(

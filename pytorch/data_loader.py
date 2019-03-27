@@ -16,7 +16,7 @@ class DataGenerator(data.Dataset):
             if superres:
                 transform = lambda x, y_hr_batch, y_sr_batch: (x, y_hr_batch, y_sr_batch)
             else:
-                transform = lambda x, y_hr_batch, y_sr_batch: (x, y_hr_batch, y_sr_batch)
+                transform = lambda x, y_hr_batch: (x, y_hr_batch)
         self.patches = patches
         self.batch_size = batch_size
         self.transform = transform
@@ -53,7 +53,7 @@ class DataGenerator(data.Dataset):
         y_train_hr[y_train_hr == 15] = 0
         y_train_hr[y_train_hr == 5] = 4
         y_train_hr[y_train_hr == 6] = 4
-        y_train_hr = to_categorical(y_train_hr, 5)
+        y_train_hr = to_categorical(y_train_hr.astype(np.uint8), 5)
 
         if self.superres:
             if fn_parts[5] in self.superres_states:
@@ -65,7 +65,7 @@ class DataGenerator(data.Dataset):
 
             # setup y_superres
         if self.superres:
-            y_train_nlcd = data[:, :, 5]
+            y_train_nlcd = data[:, :, 5].astype(np.uint8)
             y_train_nlcd = to_categorical(y_train_nlcd, 22)
 
         if self.superres:

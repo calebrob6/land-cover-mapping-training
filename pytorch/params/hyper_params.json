@@ -27,11 +27,12 @@
     "alpha_cunet_loss": 1
   },
   "model_opts": {
-    "model": "unet",
+    "model": "fusionnet",
     "unet_opts": {
       "normalization_type": "GN",
       "n_input_channels": 4,
-      "n_classes": 5
+      "n_classes": 5,
+      "n_filters":32
     },
     "conditioning_nlcd_opts":{
         "normalization_type":"GN",

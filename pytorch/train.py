@@ -149,7 +149,7 @@ def train(framework, gen_loaders, n_epochs, params):
                 framework.model.train()
             else:
                 framework.model.eval()
-            for (X, y_hr, y_sr) in gen_loaders[phase]():
+            for (X, y_sr) in gen_loaders[phase]():
                 y_sr = y_sr[:,:,92:params["patch_size"]-92,92:params["patch_size"]-92]
                 if torch.cuda.is_available():
                     X = X.cuda()
