@@ -5,6 +5,7 @@ from pytorch.models.conditional_superres_net import Conditional_superres_net
 from pytorch.losses import (multiclass_ce, multiclass_dice_loss, multiclass_jaccard_loss, multiclass_tversky_loss)
 from pytorch.train import train, Framework
 from pytorch.data_loader import DataGenerator
+from torch.utils import data
 
 
 """
@@ -49,16 +50,26 @@ batch_size = params["loader_opts"]["batch_size"]
 steps_per_epoch = params["loader_opts"]["steps_per_epoch"]
 patch_size = params["patch_size"]
 num_channels = params["loader_opts"]["num_channels"]
+params = {'batch_size': params["loader_opts"]["steps_per_epoch"],
+          'shuffle': params["loader_opts"]["shuffle"],
+          'num_workers': 4}
+params_val = {'batch_size': params["loader_opts"]["steps_per_epoch_val"],
+          'shuffle': params["loader_opts"]["shuffle"],
+          'num_workers': 4}
 
-def patch_gen_train():
-    return DataGenerator(
+training_set = DataGenerator(
         training_patches, batch_size, steps_per_epoch, patch_size, num_channels, superres=False
     )
 
-def patch_gen_val():
-    return DataGenerator(
+validation_set = DataGenerator(
         validation_patches, batch_size, steps_per_epoch, patch_size, num_channels, superres=False
     )
+
+def patch_gen_train():
+    return data.DataLoader(training_set, **params)
+
+def patch_gen_val():
+    return data.DataLoader(validation_set, **params_val)
 def main():
     train_opts = params["train_opts"]
     model_opts = params["model_opts"]

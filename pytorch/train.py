@@ -149,54 +149,31 @@ def train(framework, gen_loaders, n_epochs, params):
                 framework.model.train()
             else:
                 framework.model.eval()
-            if phase == 'train':
-                for k in range(params["loader_opts"]["steps_per_epoch"]):
-                    for (X, y_hr, ysr) in gen_loaders[phase]():
-                        y_sr = y_sr[:,:,92:params["patch_size"]-92,92:params["patch_size"]-92]
-                        if torch.cuda.is_available():
-                            X = X.cuda()
-                            y_sr = y_sr.cuda()
-                        framework.optimizer.zero_grad()
-                        with torch.set_grad_enabled(phase == 'train'):
-                            y_pred = framework.model.forward(X)
-                            loss = framework.loss(torch.squeeze(y_sr,1).long(), y_pred)
+            for (X, y_hr, y_sr) in gen_loaders[phase]():
+                y_sr = y_sr[:,:,92:params["patch_size"]-92,92:params["patch_size"]-92]
+                if torch.cuda.is_available():
+                    X = X.cuda()
+                    y_sr = y_sr.cuda()
+                framework.optimizer.zero_grad()
+                with torch.set_grad_enabled(phase == 'train'):
+                    y_pred = framework.model.forward(X)
+                    loss = framework.loss(torch.squeeze(y_sr,1).long(), y_pred)
 
-                            if phase == 'train':
-                                loss.backward()
-                                framework.optimizer.step()
-                        n_iter += 1
-                        epoch_loss += loss.item()
-                        if phase == 'val':
-                            y_sr = np.squeeze(y_sr.cpu().numpy(), axis=1)
-                            batch_size, _, _ = y_sr.shape
-                            y_hat = y_pred.cpu().numpy()
-                            y_hat = np.argmax(y_hat, axis=1)
-                            batch_meanIoU=0
-                            for j in range(batch_size):
-                                batch_meanIoU += mean_IoU(y_hat[j], y_sr[j])
-                            batch_meanIoU /= batch_size
-                            val_meanIoU += batch_meanIoU
-            else:
-                for (X, y_hr, ysr) in gen_loaders[phase]():
-                    y_sr = y_sr[:, :, 92:params["patch_size"] - 92, 92:params["patch_size"] - 92]
-                    if torch.cuda.is_available():
-                        X = X.cuda()
-                        y_sr = y_sr.cuda()
-                    framework.optimizer.zero_grad()
-                    with torch.set_grad_enabled(phase == 'train'):
-                        y_pred = framework.model.forward(X)
-                        loss = framework.loss(torch.squeeze(y_sr, 1).long(), y_pred)
-                    val_loss += loss.item()
-                    if phase == 'val':
-                        y_sr = np.squeeze(y_sr.cpu().numpy(), axis=1)
-                        batch_size, _, _ = y_sr.shape
-                        y_hat = y_pred.cpu().numpy()
-                        y_hat = np.argmax(y_hat, axis=1)
-                        batch_meanIoU = 0
-                        for j in range(batch_size):
-                            batch_meanIoU += mean_IoU(y_hat[j], y_sr[j])
-                        batch_meanIoU /= batch_size
-                        val_meanIoU += batch_meanIoU
+                    if phase == 'train':
+                        loss.backward()
+                        framework.optimizer.step()
+                n_iter += 1
+                epoch_loss += loss.item()
+                if phase == 'val':
+                    y_sr = np.squeeze(y_sr.cpu().numpy(), axis=1)
+                    batch_size, _, _ = y_sr.shape
+                    y_hat = y_pred.cpu().numpy()
+                    y_hat = np.argmax(y_hat, axis=1)
+                    batch_meanIoU=0
+                    for j in range(batch_size):
+                        batch_meanIoU += mean_IoU(y_hat[j], y_sr[j])
+                    batch_meanIoU /= batch_size
+                    val_meanIoU += batch_meanIoU
 
             # save if notice improvement
             epoch_loss /= n_iter
@@ -217,9 +194,9 @@ def train(framework, gen_loaders, n_epochs, params):
                 train_history['loss'].append(epoch_loss)
             else:
                 val_meanIoU /= n_iter
-                val_history['loss'].append(val_loss)
+                val_history['loss'].append(epoch_loss)
                 val_history['mean_IoU'].append(val_meanIoU)
-                stats['val_losses'].append(val_loss)
+                stats['val_losses'].append(epoch_loss)
                 stats['val_ious_epochs'].append(i)
 
                 scheduler.step(val_loss)

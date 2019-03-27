@@ -11,6 +11,7 @@
       "shuffle": true,
       "num_workers": 6,
       "steps_per_epoch": 300,
+      "steps_per_epoch_val": 39,
       "num_channels": 4
   },
   "train_opts": {

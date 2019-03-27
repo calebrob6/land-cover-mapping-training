@@ -87,3 +87,4 @@ class DataGenerator(data.Dataset):
     def on_epoch_end(self):
         self.indices = np.arange(len(self.patches))
         np.random.shuffle(self.indices)
+
