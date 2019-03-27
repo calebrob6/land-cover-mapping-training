@@ -24,7 +24,8 @@
     "scheduler_step_size": 20,
     "scheduler_gamma": 0.1,
     "loss": "ce",
-    "alpha_cunet_loss": 1
+    "alpha_superres_loss": 1,
+    "superres": false
   },
   "model_opts": {
     "model": "fusionnet",
@@ -37,6 +38,7 @@
     "conditioning_nlcd_opts":{
         "normalization_type":"GN",
         "n_input_channels": 4,
+        "n_filters":32,
         "n_classes": 22
     },
     "conditional_superres_net_opts": {
@@ -46,7 +48,7 @@
         "conditioning_net_ckpt_path": "/dir2/conditioning_ckpt_path",
         "n_input_channels": 4,
         "n_hidden_cbn": 512,
-        "n_features_cbn": 992,
+        "n_features_cbn": 1472,
         "n_classes": 4
       }
   }

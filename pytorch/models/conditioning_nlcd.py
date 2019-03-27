@@ -3,132 +3,141 @@ import torch
 import torch.nn as nn
 import json
 import os
-import pytorch.utils.pytorch_model_utils as nn_utils
+from pytorch.utils.fusionnet_blocks import *
 
 """
 @uthor: Anthony Ortiz
 Date: 03/25/2019
 Last Modified: 03/25/2019
 """
-class Down(nn.Module):
-    """
-    Down blocks in U-Net
-    """
-    def __init__(self, conv, max):
-        super(Down, self).__init__()
-        self.conv = conv
-        self.max = max
+class Conv_residual_conv(nn.modules.Module):
 
-    def forward(self, x):
-        x = self.conv(x)
-        return self.max(x), x, x.shape[2]
+    def __init__(self, in_dim, out_dim, act_fn):
+        super(Conv_residual_conv, self).__init__()
+        self.in_dim = in_dim
+        self.out_dim = out_dim
+        act_fn = act_fn
 
+        self.conv_1 = conv_block(self.in_dim, self.out_dim, act_fn)
+        self.conv_2 = conv_block_3(self.out_dim, self.out_dim, act_fn)
+        self.conv_3 = conv_block(self.out_dim, self.out_dim, act_fn)
 
-class Up(nn.Module):
-    """
-    Up blocks in U-Net
-
-    Similar to the down blocks, but incorporates input from skip connections.
-    """
-    def __init__(self, up, conv):
-        super(Up, self).__init__()
-        self.conv = conv
-        self.up = up
-
-    def forward(self, x, conv_out, D):
-        x = self.up(x)
-        lower = int(0.5 * (D - x.shape[2]))
-        upper = int(D - lower)
-        conv_out_ = conv_out[:, :, lower:upper, lower:upper] # adjust to zero padding
-        x = torch.cat([x, conv_out_], dim=1)
-        return self.conv(x)
+    def forward(self, input):
+        conv_1 = self.conv_1(input)
+        conv_2 = self.conv_2(conv_1)
+        res = conv_1 + conv_2
+        conv_3 = self.conv_3(res)
+        return conv_3
 
 
-class Conditioning_nlcd(nn.Module):
+class Conditioning_nlcd(nn.modules.Module):
 
     def __init__(self, model_opts):
-        self.opts = model_opts["conditioning_nlcd_opts"]
+
         super(Conditioning_nlcd, self).__init__()
+        self.opts = model_opts["conditioning_nlcd_opts"]
         self.n_input_channels = self.opts["n_input_channels"]
         self.n_classes = self.opts["n_classes"]
+        self.out_dim = self.opts["n_filters"]
+        self.final_out_dim = self.opts["n_classes"]
+        act_fn = nn.LeakyReLU(0.2, inplace=True)
+        act_fn_2 = nn.ReLU()
 
-        # down transformations
-        max2d = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.down_1 = Down(self.conv_block(self.n_input_channels, 32), max2d)
-        self.down_2 = Down(self.conv_block(32, 64), max2d)
-        self.down_3 = Down(self.conv_block(64, 128), max2d)
-        self.down_4 = Down(self.conv_block(128, 256), max2d)
+        print("\n------Initiating FusionNet------\n")
 
-        # midpoint
-        self.conv5_block = self.conv_block(256, 512)
+        # encoder
 
-        # up transformations
-        conv_tr = lambda x, y: nn.ConvTranspose2d(x, y, kernel_size=2, stride=2)
-        self.up_1 = Up(conv_tr(512, 256), self.conv_block(512, 256))
-        self.up_2 = Up(conv_tr(256, 128), self.conv_block(256, 128))
-        self.up_3 = Up(conv_tr(128, 64), self.conv_block(128, 64))
-        self.up_4 = Up(conv_tr(64, 32), self.conv_block(64, 32))
+        self.down_1 = Conv_residual_conv(self.in_dim, self.out_dim, act_fn)
+        self.pool_1 = maxpool()
+        self.down_2 = Conv_residual_conv(self.out_dim, self.out_dim * 2, act_fn)
+        self.pool_2 = maxpool()
+        self.down_3 = Conv_residual_conv(self.out_dim * 2, self.out_dim * 4, act_fn)
+        self.pool_3 = maxpool()
+        self.down_4 = Conv_residual_conv(self.out_dim * 4, self.out_dim * 8, act_fn)
+        self.pool_4 = maxpool()
 
-        # Final output
-        self.conv_final = nn.Conv2d(in_channels=32, out_channels=self.n_classes,
-                                    kernel_size=1, padding=0, stride=1)
+        # bridge
 
+        self.bridge = Conv_residual_conv(self.out_dim * 8, self.out_dim * 16, act_fn)
 
-    def conv_block(self, dim_in, dim_out, kernel_size=3, stride=1, padding=0, bias=True):
-        """
-        This is the main conv block for Unet. Two conv2d
-        :param dim_in:
-        :param dim_out:
-        :param kernel_size:
-        :param stride:
-        :param padding:
-        :param bias:
-        :param useBN:
-        :param useGN:
-        :return:
-        """
-        if self.opts["normalization_type"] == "BN":
-            return nn.Sequential(
-                nn.Conv2d(dim_in, dim_out, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
-                nn.ReLU(inplace=True),
-                nn.Conv2d(dim_out, dim_out, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
-                nn.BatchNorm2d(dim_out),
-                nn.ReLU(inplace=True),
-            )
-        elif self.opts["normalization_type"] == "GN":
-            return nn.Sequential(
-                nn.Conv2d(dim_in, dim_out, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
-                nn.ReLU(inplace=True),
-                nn.Conv2d(dim_out, dim_out, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
-                #FIXME add num_groups as hyper param on json
-                nn_utils.GroupNorm(dim_out),
-                nn.ReLU(inplace=True),
-            )
-        else:
-            return nn.Sequential(
-                nn.Conv2d(dim_in, dim_out, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
-                nn.ReLU(inplace=True),
-                nn.Conv2d(dim_out, dim_out, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
-                nn.ReLU(inplace=True)
-            )
+        # decoder
 
+        self.deconv_1 = conv_trans_block(self.out_dim * 16, self.out_dim * 8, act_fn_2)
+        self.up_1 = Conv_residual_conv(self.out_dim * 8, self.out_dim * 8, act_fn_2)
+        self.deconv_2 = conv_trans_block(self.out_dim * 8, self.out_dim * 4, act_fn_2)
+        self.up_2 = Conv_residual_conv(self.out_dim * 4, self.out_dim * 4, act_fn_2)
+        self.deconv_3 = conv_trans_block(self.out_dim * 4, self.out_dim * 2, act_fn_2)
+        self.up_3 = Conv_residual_conv(self.out_dim * 2, self.out_dim * 2, act_fn_2)
+        self.deconv_4 = conv_trans_block(self.out_dim * 2, self.out_dim, act_fn_2)
+        self.up_4 = Conv_residual_conv(self.out_dim, self.out_dim, act_fn_2)
 
-    def forward(self, x):
-        # down layers
-        x, conv1_out, conv1_dim = self.down_1(x)
-        x, conv2_out, conv2_dim = self.down_2(x)
-        x, conv3_out, conv3_dim = self.down_3(x)
-        x, conv4_out, conv4_dim = self.down_4(x)
+        # output
 
-        # Bottleneck
-        x = self.conv5_block(x)
+        self.out = nn.Conv2d(self.out_dim, self.final_out_dim, kernel_size=3, stride=1, padding=1)
+        self.out_2 = nn.Tanh()
+        '''
+        self.out = nn.Sequential(
+            nn.Conv2d(self.out_dim,self.final_out_dim, kernel_size=3, stride=1, padding=1),
+            #nn.BatchNorm2d(self.final_out_dim),
+            nn.Tanh(),
+        )
+        '''
 
-        # up layers
-        x = self.up_1(x, conv4_out, conv4_dim)
-        x = self.up_2(x, conv3_out, conv3_dim)
-        x = self.up_3(x, conv2_out, conv2_dim)
-        x = self.up_4(x, conv1_out, conv1_dim)
-        return self.conv_final(x)
+        # initialization
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                m.weight.data.normal_(0.0, 0.02)
+                m.bias.data.fill_(0)
+
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.normal_(1.0, 0.02)
+                m.bias.data.fill_(0)
+
+    def pre_pred(self, x):
+        down_1 = self.down_1(x)
+        pool_1 = self.pool_1(down_1)
+        down_2 = self.down_2(pool_1)
+        pool_2 = self.pool_2(down_2)
+        down_3 = self.down_3(pool_2)
+        pool_3 = self.pool_3(down_3)
+        down_4 = self.down_4(pool_3)
+        pool_4 = self.pool_4(down_4)
+
+        bridge = self.bridge(pool_4)
+        print(bridge.shape)
+        return bridge.reshape(bridge.size(0), -1)
+
+    def forward(self, input):
+
+        down_1 = self.down_1(input)
+        pool_1 = self.pool_1(down_1)
+        down_2 = self.down_2(pool_1)
+        pool_2 = self.pool_2(down_2)
+        down_3 = self.down_3(pool_2)
+        pool_3 = self.pool_3(down_3)
+        down_4 = self.down_4(pool_3)
+        pool_4 = self.pool_4(down_4)
+
+        bridge = self.bridge(pool_4)
+
+        deconv_1 = self.deconv_1(bridge)
+        skip_1 = (deconv_1 + down_4) / 2
+        up_1 = self.up_1(skip_1)
+        deconv_2 = self.deconv_2(up_1)
+        skip_2 = (deconv_2 + down_3) / 2
+        up_2 = self.up_2(skip_2)
+        deconv_3 = self.deconv_3(up_2)
+        skip_3 = (deconv_3 + down_2) / 2
+        up_3 = self.up_3(skip_3)
+        deconv_4 = self.deconv_4(up_3)
+        skip_4 = (deconv_4 + down_1) / 2
+        up_4 = self.up_4(skip_4)
+
+        out = self.out(up_4)
+        out = self.out_2(out)
+        # out = torch.clamp(out, min=-1, max=1)
+        return out
 
 
 #Test with mock data

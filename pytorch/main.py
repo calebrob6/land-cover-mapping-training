@@ -4,7 +4,7 @@ from pytorch.models.unet import Unet
 from pytorch.models.fusionnet import Fusionnet
 from pytorch.models.conditional_superres_net import Conditional_superres_net
 from pytorch.losses import (multiclass_ce, multiclass_dice_loss, multiclass_jaccard_loss, multiclass_tversky_loss)
-from pytorch.train import train, Framework
+from pytorch.train import train, Framework, train_superres
 from pytorch.data_loader import DataGenerator
 from torch.utils import data
 
@@ -55,11 +55,11 @@ params_train = {'batch_size': params["loader_opts"]["batch_size"],
           'num_workers': params["loader_opts"]["num_workers"]}
 
 training_set = DataGenerator(
-        training_patches, batch_size, patch_size, num_channels, superres=False
+        training_patches, batch_size, patch_size, num_channels, superres=params["train_opts"]["superres"]
     )
 
 validation_set = DataGenerator(
-        validation_patches, batch_size, patch_size, num_channels, superres=False
+        validation_patches, batch_size, patch_size, num_channels, superres=params["train_opts"]["superres"]
     )
 
 def patch_gen_train():
@@ -110,8 +110,8 @@ def main():
     #FIXME: Not sure if shuffling is working
 
     if model_opts["model"] == "conditional_superres_net":
-        print("Option {} not supported. It will be available shortly Available options: unet".format(train_opts["loss"]))
-        raise NotImplementedError
+        _, train_history, val_history = train_superres(frame, dataloaders, train_opts["n_epochs"],
+                                              params)
     else:
         _, train_history, val_history = train(frame, dataloaders, train_opts["n_epochs"],
                                               params)

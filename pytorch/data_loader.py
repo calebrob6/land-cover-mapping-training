@@ -53,20 +53,20 @@ class DataGenerator(data.Dataset):
         y_train_hr[y_train_hr == 15] = 0
         y_train_hr[y_train_hr == 5] = 4
         y_train_hr[y_train_hr == 6] = 4
-        y_train_hr = to_categorical(y_train_hr.astype(np.uint8), 5)
+        #y_train_hr = to_categorical(y_train_hr.astype(np.uint8), 5)
 
-        if self.superres:
-            if fn_parts[5] in self.superres_states:
-                y_train_hr[:, :, 0] = 0
-            else:
-                y_train_hr[:, :, 0] = 1
-        else:
-            y_train_hr[:, :, 0] = 0
+       # if self.superres:
+        #    if fn_parts[5] in self.superres_states:
+        #        y_train_hr[:, :, 0] = 0
+         #   else:
+        #        y_train_hr[:, :, 0] = 1
+      #  else:
+         #   y_train_hr[:, :, 0] = 0
 
             # setup y_superres
         if self.superres:
             y_train_nlcd = data[:, :, 5].astype(np.uint8)
-            y_train_nlcd = to_categorical(y_train_nlcd, 22)
+           # y_train_nlcd = to_categorical(y_train_nlcd, 22)
 
         if self.superres:
             return self.transform(torch.from_numpy(x.copy()), torch.from_numpy(y_train_hr), torch.from_numpy(y_train_nlcd))
