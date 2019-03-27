@@ -3,8 +3,8 @@
   "checkpoint_file": "none",
   "save_dir": "/mnt/blobfuse/train-output/conditioning/models/",
   "backup_dir": "/mnt/blobfuse/train-output/conditioning/models/backup_conditioning_groups/",
-  "validation_patches_fn":"/data/md_1m_2013_val_patches.txt",
-  "training_patches_fn":"/data/md_1m_2013_train_patches.txt",
+  "validation_patches_fn":"data/md_1m_2013_val_patches.txt",
+  "training_patches_fn":"data/md_1m_2013_train_patches.txt",
   "patch_size": 240,
   "loader_opts": {
       "batch_size": 16,
@@ -15,10 +15,11 @@
   },
   "train_opts": {
     "n_epochs": 100,
-    "verbose": false,
+    "verbose": true,
     "data_augmentation": false,
     "early_stopping": false,
     "early_stopping_patience": 10,
+    "parallelize": false,
     "optimizer": "adam",
     "optimizer_lr": 5e-4,
     "scheduler_step_size": 20,

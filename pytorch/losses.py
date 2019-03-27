@@ -5,7 +5,7 @@ from torch.nn import functional as F
 #Few losses modified from: https://github.com/kevinzakka/pytorch-goodies/blob/master/losses.py
 
 #crossentropy no one hot
-class multiclass_ce(nn.Module):
+class multiclass_ce(nn.modules.Module):
     def __init__(self):
         super(multiclass_ce, self).__init__()
         self.crossentropy = nn.CrossEntropyLoss()
@@ -14,7 +14,7 @@ class multiclass_ce(nn.Module):
         loss = self.crossentropy(y_pred, y_true)
         return loss
 
-class weighted_ce_loss(nn.module):
+class weighted_ce_loss(nn.modules.Module):
     def __index__(self):
         super(weighted_ce_loss, self).__init__()
 
@@ -42,7 +42,7 @@ class weighted_ce_loss(nn.module):
         ce = self.ce_loss(y_true, logits, weights)
         return ce
 
-class multiclass_dice_loss(nn.module):
+class multiclass_dice_loss(nn.modules.Module):
     def __index__(self):
         super(multiclass_dice_loss, self).__init__()
 
@@ -84,7 +84,7 @@ class multiclass_dice_loss(nn.module):
         dice = self.dice_loss(y_true, logits)
         return dice
 
-class multiclass_jaccard_loss(nn.module):
+class multiclass_jaccard_loss(nn.modules.Module):
     def __index__(self):
         super(multiclass_jaccard_loss, self).__init__()
 
@@ -127,7 +127,7 @@ class multiclass_jaccard_loss(nn.module):
         jaccard = self.jaccard_loss(y_true, logits)
         return jaccard
 
-class multiclass_tversky_loss(nn.module):
+class multiclass_tversky_loss(nn.modules.Module):
     def __index__(self):
         super(multiclass_tversky_loss, self).__init__()
 

@@ -41,7 +41,7 @@ class DataGenerator(data.Dataset):
 
         fns = [self.patches[i] for i in indices]
 
-        x_batch = np.zeros((self.batch_size, self.patch_size, self.patch_size, self.num_channels), dtype=np.float32)
+        x_batch = np.zeros((self.batch_size, self.num_channels, self.patch_size, self.patch_size), dtype=np.float32)
         y_hr_batch = np.zeros((self.batch_size, self.patch_size, self.patch_size, 5), dtype=np.float32)
         y_sr_batch = None
         if self.superres:
@@ -54,8 +54,8 @@ class DataGenerator(data.Dataset):
             data = np.rollaxis(data, 0, 3)
 
             # setup x
-            x_batch[i] = data[:, :, :4]
-            x_batch[i] = np.transpose(x_batch[i], (2, 0, 1))
+            #x_batch[i] = data[:, :, :4]
+            x_batch[i] = np.transpose(data[:, :, :4], (2, 0, 1))
 
             # setup y_highres
             y_train_hr = data[:, :, 4]

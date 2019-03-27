@@ -21,7 +21,7 @@ def parse_int_list(s):
 parser = argparse.ArgumentParser()
 
 ### JSON FILE IF NEW EXPERIMENT
-parser.add_argument('--config-file', type=str,
+parser.add_argument('--config_file', type=str,
                     help="json file containing the configuration")
 
 
@@ -33,7 +33,7 @@ parser.add_argument('--debug', action='store_true', help=(
 args = parser.parse_args()
 
 assert args.config_file is not None
-params = json.load(open(args.cofig_file))
+params = json.load(open(args.config_file))
 
 training_patches_fn = params["training_patches_fn"]
 validation_patches_fn = params["validation_patches_fn"]
@@ -48,7 +48,7 @@ f.close()
 batch_size = params["loader_opts"]["batch_size"]
 steps_per_epoch = params["loader_opts"]["steps_per_epoch"]
 patch_size = params["patch_size"]
-num_channels = params["num_channels"]
+num_channels = params["loader_opts"]["num_channels"]
 
 def patch_gen_train():
     return DataGenerator(

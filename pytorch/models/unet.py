@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import json
 import os
-import utils.model_utils as nn_utils
+import pytorch.utils.pytorch_model_utils as nn_utils
 
 class Down(nn.Module):
     """

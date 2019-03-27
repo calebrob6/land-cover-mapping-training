@@ -37,13 +37,13 @@ def train(framework, gen_loaders, n_epochs, params):
         resume_run = False
 
         experiment_dir = os.path.join(params["save_dir"], params["experiment_name"])
-        train_dir = os.path.join(experiment_dir, f'training')
+        train_dir = os.path.join(experiment_dir, 'training/')
 
         if not os.path.exists(train_dir):
             os.makedirs(train_dir)
         if os.listdir(train_dir):
             raise IOError('train_dir is expected to be empty for new experiments. '
-                          f'{train_dir} is not empty! Aborting...')
+                          'train_dir is not empty! Aborting...')
 
         # determine backup folder path and create it if necessary
         backup_dir = os.path.join(
@@ -78,11 +78,11 @@ def train(framework, gen_loaders, n_epochs, params):
         log_file = os.path.join(train_dir, "log_file.log")
 
     config = NamespaceFromDict(params)
-    improve_reproducibility(seed=config.rand_seed)
+#    improve_reproducibility(seed=config.rand_seed)
 
     train_opts = params["train_opts"]
     if train_opts["verbose"]:
-        print(f'using training directory {train_dir}')
+        print('using training directory {}',train_dir)
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     framework.model.to(device)
@@ -148,31 +148,32 @@ def train(framework, gen_loaders, n_epochs, params):
                 framework.model.train()
             else:
                 framework.model.eval()
-            for (X, y_hr, ysr) in gen_loaders[phase]():
-                y_sr = y_sr[:,:,92:params["patch_size"]-92,92:params["patch_size"]-92]
-                if torch.cuda.is_available():
-                    X = X.cuda()
-                    y_sr = y_sr.cuda()
-                framework.optimizer.zero_grad()
-                with torch.set_grad_enabled(phase == 'train'):
-                    y_pred = framework.model.forward(X)
-                    loss = framework.loss(torch.squeeze(y_sr,1).long(), y_pred)
+            for k in range(steps_per_epoch = params["loader_opts"]["steps_per_epoch"]):
+                for (X, y_hr, ysr) in gen_loaders[phase]():
+                    y_sr = y_sr[:,:,92:params["patch_size"]-92,92:params["patch_size"]-92]
+                    if torch.cuda.is_available():
+                        X = X.cuda()
+                        y_sr = y_sr.cuda()
+                    framework.optimizer.zero_grad()
+                    with torch.set_grad_enabled(phase == 'train'):
+                        y_pred = framework.model.forward(X)
+                        loss = framework.loss(torch.squeeze(y_sr,1).long(), y_pred)
 
-                    if phase == 'train':
-                        loss.backward()
-                        framework.optimizer.step()
-                n_iter += 1
-                epoch_loss += loss.item()
-                if phase == 'val':
-                    y_sr = np.squeeze(y_sr.cpu().numpy(), axis=1)
-                    batch_size, _, _ = y_sr.shape
-                    y_hat = y_pred.cpu().numpy()
-                    y_hat = np.argmax(y_hat, axis=1)
-                    batch_meanIoU=0
-                    for j in range(batch_size):
-                        batch_meanIoU += mean_IoU(y_hat[j], y_sr[j])
-                    batch_meanIoU /= batch_size
-                    val_meanIoU += batch_meanIoU
+                        if phase == 'train':
+                            loss.backward()
+                            framework.optimizer.step()
+                    n_iter += 1
+                    epoch_loss += loss.item()
+                    if phase == 'val':
+                        y_sr = np.squeeze(y_sr.cpu().numpy(), axis=1)
+                        batch_size, _, _ = y_sr.shape
+                        y_hat = y_pred.cpu().numpy()
+                        y_hat = np.argmax(y_hat, axis=1)
+                        batch_meanIoU=0
+                        for j in range(batch_size):
+                            batch_meanIoU += mean_IoU(y_hat[j], y_sr[j])
+                        batch_meanIoU /= batch_size
+                        val_meanIoU += batch_meanIoU
 
             # save if notice improvement
             epoch_loss /= n_iter

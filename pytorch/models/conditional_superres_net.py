@@ -3,7 +3,7 @@ import torch.nn as nn
 from pytorch.models.conditioning_nlcd import Conditioning_nlcd
 import json, os
 import torch.nn.functional as F
-import utils.model_utils as nn_utils
+import pytorch.utils.pytorch_model_utils as nn_utils
 
 """
 @uthor: Anthony Ortiz
