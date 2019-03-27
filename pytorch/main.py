@@ -47,7 +47,6 @@ validation_patches = f.read().strip().split("\n")
 f.close()
 
 batch_size = params["loader_opts"]["batch_size"]
-steps_per_epoch = params["loader_opts"]["steps_per_epoch"]
 patch_size = params["patch_size"]
 num_channels = params["loader_opts"]["num_channels"]
 params_train = {'batch_size': params["loader_opts"]["batch_size"],
@@ -55,11 +54,11 @@ params_train = {'batch_size': params["loader_opts"]["batch_size"],
           'num_workers': params["loader_opts"]["num_workers"]}
 
 training_set = DataGenerator(
-        training_patches, batch_size, steps_per_epoch, patch_size, num_channels, superres=False
+        training_patches, batch_size, patch_size, num_channels, superres=False
     )
 
 validation_set = DataGenerator(
-        validation_patches, batch_size, steps_per_epoch, patch_size, num_channels, superres=False
+        validation_patches, batch_size, patch_size, num_channels, superres=False
     )
 
 def patch_gen_train():

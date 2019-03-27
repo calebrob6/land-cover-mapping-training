@@ -9,7 +9,7 @@ def to_categorical(y, num_classes):
 class DataGenerator(data.Dataset):
     'Generates data for pytorch'
     # def __init__(self, list_IDs, labels, batch_size=32, dim=(32,32,32), n_channels=1, n_classes=10, shuffle=True):
-    def __init__(self, patches, batch_size, steps_per_epoch, patch_size, num_channels, transform = None, superres=False,
+    def __init__(self, patches, batch_size, patch_size, num_channels, transform = None, superres=False,
                  superres_states=[]):
         'Initialization'
         if not transform:
@@ -19,8 +19,6 @@ class DataGenerator(data.Dataset):
                 transform = lambda x, y_hr_batch, y_sr_batch: (x, y_hr_batch, y_sr_batch)
         self.patches = patches
         self.batch_size = batch_size
-        self.steps_per_epoch = steps_per_epoch
-        assert steps_per_epoch * batch_size < len(patches)
         self.transform = transform
         self.patch_size = patch_size
 
@@ -33,17 +31,13 @@ class DataGenerator(data.Dataset):
 
     def __len__(self):
         'Denotes the number of batches per epoch'
-        return self.steps_per_epoch
+        return len(self.patches)
 
     def __getitem__(self, index):
         'Generate one sample of data'
         #indices = self.indices[index * self.batch_size:(index + 1) * self.batch_size]
 
         #fns = [self.patches[i] for i in indices]
-        y_sr_batch = None
-        if self.superres:
-            y_sr_batch = np.zeros((self.patch_size, self.patch_size, 22), dtype=np.float32)
-
 
         fn_parts = self.patches[index].split("/")
 
