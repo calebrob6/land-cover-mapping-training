@@ -50,7 +50,7 @@ batch_size = params["loader_opts"]["batch_size"]
 steps_per_epoch = params["loader_opts"]["steps_per_epoch"]
 patch_size = params["patch_size"]
 num_channels = params["loader_opts"]["num_channels"]
-params = {'batch_size': params["loader_opts"]["steps_per_epoch"],
+params_train = {'batch_size': params["loader_opts"]["steps_per_epoch"],
           'shuffle': params["loader_opts"]["shuffle"],
           'num_workers': 4}
 params_val = {'batch_size': params["loader_opts"]["steps_per_epoch_val"],
@@ -66,7 +66,7 @@ validation_set = DataGenerator(
     )
 
 def patch_gen_train():
-    return data.DataLoader(training_set, **params)
+    return data.DataLoader(training_set, **params_train)
 
 def patch_gen_val():
     return data.DataLoader(validation_set, **params_val)

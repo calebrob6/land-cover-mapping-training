@@ -36,53 +36,48 @@ class DataGenerator(data.Dataset):
         return self.steps_per_epoch
 
     def __getitem__(self, index):
-        'Generate one batch of data'
-        indices = self.indices[index * self.batch_size:(index + 1) * self.batch_size]
+        'Generate one sample of data'
+        #indices = self.indices[index * self.batch_size:(index + 1) * self.batch_size]
 
-        fns = [self.patches[i] for i in indices]
-
-        x_batch = np.zeros((self.batch_size, self.num_channels, self.patch_size, self.patch_size), dtype=np.float32)
-        y_hr_batch = np.zeros((self.batch_size, self.patch_size, self.patch_size, 5), dtype=np.float32)
+        #fns = [self.patches[i] for i in indices]
         y_sr_batch = None
         if self.superres:
-            y_sr_batch = np.zeros((self.batch_size, self.patch_size, self.patch_size, 22), dtype=np.float32)
+            y_sr_batch = np.zeros((self.patch_size, self.patch_size, 22), dtype=np.float32)
 
-        for i, fn in enumerate(fns):
-            fn_parts = fn.split("/")
 
-            data = np.load(fn).squeeze()
-            data = np.rollaxis(data, 0, 3)
+        fn_parts = self.patches[index].split("/")
+
+        data = np.load(self.patches[index]).squeeze()
+        data = np.rollaxis(data, 0, 3)
 
             # setup x
             #x_batch[i] = data[:, :, :4]
-            x_batch[i] = np.transpose(data[:, :, :4], (2, 0, 1))
+        x = np.transpose(data[:, :, :4], (2, 0, 1))
 
             # setup y_highres
-            y_train_hr = data[:, :, 4]
-            y_train_hr[y_train_hr == 15] = 0
-            y_train_hr[y_train_hr == 5] = 4
-            y_train_hr[y_train_hr == 6] = 4
-            y_train_hr = to_categorical(y_train_hr, 5)
-
-            if self.superres:
-                if fn_parts[5] in self.superres_states:
-                    y_train_hr[:, :, 0] = 0
-                else:
-                    y_train_hr[:, :, 0] = 1
-            else:
-                y_train_hr[:, :, 0] = 0
-            y_hr_batch[i] = y_train_hr
-
-            # setup y_superres
-            if self.superres:
-                y_train_nlcd = data[:, :, 5]
-                y_train_nlcd = to_categorical(y_train_nlcd, 22)
-                y_sr_batch[i] = y_train_nlcd
+        y_train_hr = data[:, :, 4]
+        y_train_hr[y_train_hr == 15] = 0
+        y_train_hr[y_train_hr == 5] = 4
+        y_train_hr[y_train_hr == 6] = 4
+        y_train_hr = to_categorical(y_train_hr, 5)
 
         if self.superres:
-            return self.transform(torch.from_numpy(x_batch.copy()), torch.from_numpy(y_hr_batch), torch.from_numpy(y_sr_batch))
+            if fn_parts[5] in self.superres_states:
+                y_train_hr[:, :, 0] = 0
+            else:
+                y_train_hr[:, :, 0] = 1
         else:
-            return self.transform(torch.from_numpy(x_batch.copy()), torch.from_numpy(y_hr_batch))
+            y_train_hr[:, :, 0] = 0
+
+            # setup y_superres
+        if self.superres:
+            y_train_nlcd = data[:, :, 5]
+            y_train_nlcd = to_categorical(y_train_nlcd, 22)
+
+        if self.superres:
+            return self.transform(torch.from_numpy(x.copy()), torch.from_numpy(y_train_hr), torch.from_numpy(y_train_nlcd))
+        else:
+            return self.transform(torch.from_numpy(x.copy()), torch.from_numpy(y_train_hr))
 
     def on_epoch_end(self):
         self.indices = np.arange(len(self.patches))
