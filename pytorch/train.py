@@ -378,8 +378,9 @@ def train(framework, gen_loaders, n_epochs, params):
                 n_iter += 1
 
                 if train_opts["verbose"]:
-                    iter_str = "\n{} Epoch number: {} time: {} time: {}".format(
+                    iter_str = "\n{} loss: {} Epoch number: {} time: {} iter: {}".format(
                         str(phase),
+                        str(loss.item()),
                         str(i),
                         str(int(time() - tic)),
                         str(n_iter)

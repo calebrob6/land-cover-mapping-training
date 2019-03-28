@@ -69,9 +69,9 @@ class DataGenerator(data.Dataset):
            # y_train_nlcd = to_categorical(y_train_nlcd, 22)
 
         if self.superres:
-            return self.transform(torch.from_numpy(x.copy()), torch.from_numpy(y_train_hr), torch.from_numpy(y_train_nlcd))
+            return self.transform(torch.from_numpy(x.copy()), torch.from_numpy(np.expand_dims(y_train_hr,0)), torch.from_numpy(np.expand_dims(y_train_nlcd,0)))
         else:
-            return self.transform(torch.from_numpy(x.copy()), torch.from_numpy(y_train_hr))
+            return self.transform(torch.from_numpy(x.copy()), torch.from_numpy(np.expand_dims(y_train_hr,0)))
 
     def on_epoch_end(self):
         self.indices = np.arange(len(self.patches))
