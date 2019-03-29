@@ -25,9 +25,9 @@ parser.add_argument("-d", "--directory", dest="directory", default=".")
 args = parser.parse_args([])
 
 assets = [
-    {"item_type": "REOrthoTile", "id": "20180315_042412_4646623_RapidEye-1"},
-    {"item_type": "SkySatCollect", "id": "20180701_183647_ssc8_u0001"}
+    {"item_type": "PSScene4Band", "id": "20170423_125001_0c81"}
 ]
+
 # download images we requested
 sat.parallel_downloads(assets, args.api_key, out_dir=args.directory)
 
