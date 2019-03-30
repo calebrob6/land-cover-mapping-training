@@ -1,8 +1,8 @@
 {
-  "experiment_name": "conditioning_groups",
+  "experiment_name": "conditional_superres512",
   "checkpoint_file": "none",
   "save_dir": "/mnt/blobfuse/train-output/conditioning/models/",
-  "backup_dir": "/mnt/blobfuse/train-output/conditioning/models/backup_conditioning_groups/",
+  "backup_dir": "/mnt/blobfuse/train-output/conditioning/models/backup_conditional_superres512/",
   "validation_patches_fn":"data/md_1m_2013_val_patches.txt",
   "training_patches_fn":"data/md_1m_2013_train_patches.txt",
   "patch_size": 240,
@@ -49,7 +49,8 @@
         "n_input_channels": 4,
         "n_hidden_cbn": 512,
         "n_features_cbn": 1472,
-        "n_classes": 4
-      }
+        "n_classes": 5,
+        "n_filters":32
+    }
   }
 }

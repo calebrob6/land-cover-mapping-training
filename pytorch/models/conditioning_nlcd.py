@@ -47,7 +47,7 @@ class Conditioning_nlcd(nn.modules.Module):
 
         # encoder
 
-        self.down_1 = Conv_residual_conv(self.in_dim, self.out_dim, act_fn)
+        self.down_1 = Conv_residual_conv(self.n_input_channels, self.out_dim, act_fn)
         self.pool_1 = maxpool()
         self.down_2 = Conv_residual_conv(self.out_dim, self.out_dim * 2, act_fn)
         self.pool_2 = maxpool()
