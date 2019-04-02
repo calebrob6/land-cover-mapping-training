@@ -364,6 +364,20 @@ def train(framework, gen_loaders, n_epochs, params):
             else:
                 framework.model.eval()
             for (X, y_sr) in gen_loaders[phase]():
+                if params["model_opts"]["model"] == "unet":
+                    r = np.pad(X[0, :, :], ((4, 4), (4, 4)), 'reflect')
+                    g = np.pad(X[1, :, :], ((4, 4), (4, 4)), 'reflect')
+                    b = np.pad(X[2, :, :], ((4, 4), (4, 4)), 'reflect')
+                    ir = np.pad(X[3, :, :], ((4, 4), (4, 4)), 'reflect')
+
+                    rw, rh = r.shape
+                    norm_image_padded = np.zeros((4, rw, rh))
+                    norm_image_padded[0, :, :] = r
+                    norm_image_padded[1, :, :] = g
+                    norm_image_padded[2, :, :] = b
+                    norm_image_padded[3, :, :] = ir
+                    X = norm_image_padded
+                    y_sr = y_sr[:, :, 88:params["patch_size"] - 88, 88:params["patch_size"] - 88]
                 if torch.cuda.is_available():
                     X = X.cuda()
                     y_sr = y_sr.cuda()
@@ -465,3 +479,4 @@ def train(framework, gen_loaders, n_epochs, params):
     saveLoss(train_history['loss'], val_history['loss'], backup_dir, "loss_figure")
     saveLoss(train_history['loss'], val_history['loss'], train_dir, "loss_figure")
     return framework, train_history, val_history
+
