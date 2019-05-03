@@ -6,3 +6,4 @@ __pycache__
 sync_up.sh
 files_to_sync.txt
 files_not_to_sync.txt
+./idea/

@@ -1,8 +1,8 @@
 {
-  "experiment_name": "unet_gn",
+  "experiment_name": "unet_no_norm",
   "checkpoint_file": "none",
   "save_dir": "/mnt/blobfuse/train-output/conditioning/models/",
-  "backup_dir": "/mnt/blobfuse/train-output/conditioning/models/backup_unet_gn/",
+  "backup_dir": "/mnt/blobfuse/train-output/conditioning/models/backup_unet_no_norm/",
   "validation_patches_fn":"data/md_1m_2013_val_patches.txt",
   "training_patches_fn":"data/md_1m_2013_train_patches.txt",
   "patch_size": 240,
