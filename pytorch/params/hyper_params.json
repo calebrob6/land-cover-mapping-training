@@ -1,8 +1,8 @@
 {
-  "experiment_name": "unet_no_norm",
+  "experiment_name": "unet_gn_nn",
   "checkpoint_file": "none",
   "save_dir": "/mnt/blobfuse/train-output/conditioning/models/",
-  "backup_dir": "/mnt/blobfuse/train-output/conditioning/models/backup_unet_no_norm/",
+  "backup_dir": "/mnt/blobfuse/train-output/conditioning/models/backup_unet_gn_nn",
   "validation_patches_fn":"data/md_1m_2013_val_patches.txt",
   "training_patches_fn":"data/md_1m_2013_train_patches.txt",
   "patch_size": 240,
@@ -28,7 +28,7 @@
     "superres": false
   },
   "model_opts": {
-    "model": "unet",
+    "model": "unet_v2",
     "unet_opts": {
       "normalization_type": "GN",
       "n_input_channels": 4,

@@ -52,7 +52,7 @@ class Unet(nn.Module):
 
         # down transformations
         max2d = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.down_1 = Down(self.conv_block2(self.n_input_channels, 32), max2d)
+        self.down_1 = Down(self.conv_block(self.n_input_channels, 32), max2d)
         self.down_2 = Down(self.conv_block2(32, 64), max2d)
         self.down_3 = Down(self.conv_block2(64, 128), max2d)
         self.down_4 = Down(self.conv_block2(128, 256), max2d)
@@ -65,7 +65,7 @@ class Unet(nn.Module):
         self.up_1 = Up(conv_tr(512, 256), self.conv_block2(512, 256))
         self.up_2 = Up(conv_tr(256, 128), self.conv_block2(256, 128))
         self.up_3 = Up(conv_tr(128, 64), self.conv_block2(128, 64))
-        self.up_4 = Up(conv_tr(64, 32), self.conv_block2(64, 32))
+        self.up_4 = Up(conv_tr(64, 32), self.conv_block(64, 32))
 
         # Final output
         self.conv_final = nn.Conv2d(in_channels=32, out_channels=self.n_classes,
@@ -131,6 +131,136 @@ class Unet(nn.Module):
             nn.Conv2d(dim_in, dim_out, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
             nn.ReLU(inplace=True),
             nn.Conv2d(dim_out, dim_out, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
+            nn.ReLU(inplace=True)
+        )
+
+    def forward(self, x):
+        # down layers
+        x, conv1_out, conv1_dim = self.down_1(x)
+        x, conv2_out, conv2_dim = self.down_2(x)
+        x, conv3_out, conv3_dim = self.down_3(x)
+        x, conv4_out, conv4_dim = self.down_4(x)
+
+        # Bottleneck
+        x = self.conv5_block(x)
+
+        # up layers
+        x = self.up_1(x, conv4_out, conv4_dim)
+        x = self.up_2(x, conv3_out, conv3_dim)
+        x = self.up_3(x, conv2_out, conv2_dim)
+        x = self.up_4(x, conv1_out, conv1_dim)
+        return self.conv_final(x)
+
+class Unet_v2(nn.Module):
+
+    def __init__(self, model_opts):
+        self.opts = model_opts["unet_opts"]
+        super(Unet_v2, self).__init__()
+        self.n_input_channels = self.opts["n_input_channels"]
+        self.n_classes = self.opts["n_classes"]
+
+        # down transformations
+        max2d = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.down_1 = Down(self.conv_block(self.n_input_channels, 32), max2d)
+        self.down_2 = Down(self.conv_block3(32, 64), max2d)
+        self.down_3 = Down(self.conv_block3(64, 128), max2d)
+        self.down_4 = Down(self.conv_block3(128, 256), max2d)
+
+        # midpoint
+        self.conv5_block = self.conv_block3(256, 512)
+
+        # up transformations
+        conv_tr = lambda x, y: nn.ConvTranspose2d(x, y, kernel_size=2, stride=2)
+        self.up_1 = Up(conv_tr(512, 256), self.conv_block3(512, 256))
+        self.up_2 = Up(conv_tr(256, 128), self.conv_block3(256, 128))
+        self.up_3 = Up(conv_tr(128, 64), self.conv_block3(128, 64))
+        self.up_4 = Up(conv_tr(64, 32), self.conv_block(64, 32))
+
+        # Final output
+        self.conv_final = nn.Conv2d(in_channels=32, out_channels=self.n_classes,
+                                    kernel_size=1, padding=0, stride=1)
+
+        # How many pixels are lost on each edge (top, bottom, left, right) when an input is run through the model
+        # Output is not valid on full height and width. Must take following slice:
+        #   output[ self.border_margin_px : output.shape[0] - self.border_margin_px,
+        #           self.border_margin_px : output.shape[1] - self.border_margin_px  ]
+        self.border_margin_px = 92
+
+    def conv_block(self, dim_in, dim_out, kernel_size=3, stride=1, padding=0, bias=True):
+        """
+        This is the main conv block for Unet. Two conv2d
+        :param dim_in:
+        :param dim_out:
+        :param kernel_size:
+        :param stride:
+        :param padding:
+        :param bias:
+        :param useBN:
+        :param useGN:
+        :return:
+        """
+        if self.opts["normalization_type"] == "BN":
+            return nn.Sequential(
+                nn.Conv2d(dim_in, dim_out, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(dim_out, dim_out, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
+                nn.BatchNorm2d(dim_out),
+                nn.ReLU(inplace=True),
+            )
+        elif self.opts["normalization_type"] == "GN":
+            return nn.Sequential(
+                nn.Conv2d(dim_in, dim_out, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(dim_out, dim_out, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
+                GroupNormNN(dim_out),
+                nn.ReLU(inplace=True),
+            )
+        else:
+            return nn.Sequential(
+                nn.Conv2d(dim_in, dim_out, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(dim_out, dim_out, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
+                nn.ReLU(inplace=True)
+            )
+
+    def conv_block2(self, dim_in, dim_out, kernel_size=3, stride=1, padding=0, bias=True):
+        """
+        This is the main conv block for Unet. Two conv2d
+        :param dim_in:
+        :param dim_out:
+        :param kernel_size:
+        :param stride:
+        :param padding:
+        :param bias:
+        :param useBN:
+        :param useGN:
+        :return:
+        """
+        return nn.Sequential(
+            nn.Conv2d(dim_in, dim_out, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(dim_out, dim_out, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
+            nn.ReLU(inplace=True)
+        )
+
+    def conv_block3(self, dim_in, dim_out, kernel_size=3, stride=1, padding=0, bias=True):
+        """
+        This is the main conv block for Unet. Two conv2d
+        :param dim_in:
+        :param dim_out:
+        :param kernel_size:
+        :param stride:
+        :param padding:
+        :param bias:
+        :param useBN:
+        :param useGN:
+        :return:
+        """
+        return nn.Sequential(
+            nn.Conv2d(dim_in, dim_out, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(dim_out, dim_out, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
+            nn.BatchNorm2d(dim_out),
             nn.ReLU(inplace=True)
         )
 
